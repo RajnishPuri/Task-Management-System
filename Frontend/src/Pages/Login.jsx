@@ -26,7 +26,7 @@ const Login = () => {
 
         const user = { email, password };
 
-        axios.post('http://localhost:3000/api/auth/login', user) // Use HTTP instead of HTTPS
+        axios.post('http://localhost:3000/api/auth/login', user)
             .then(response => {
                 const data = response.data;
                 const token = data.token;

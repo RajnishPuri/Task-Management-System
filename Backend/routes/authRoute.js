@@ -1,10 +1,10 @@
 const express = require('express');
 const { body } = require('express-validator');
 const userRouter = express.Router();
-const { authMiddleware } = require('../middleware/authMiddleware');
+const { authMiddleware, isAdmin } = require('../middleware/authMiddleware');
 const { registerRateLimiter } = require('../middleware/ratelimiter');
 
-const { registerUser, login, getUserProfile, logout } = require('../controllers/UserAuthController');
+const { registerUser, login, getUserProfile, logout, getAllUsers, getAllAdmins } = require('../controllers/UserAuthController');
 
 userRouter.post('/register', [
     body('email').isEmail().withMessage('Invalid Email'),
@@ -21,5 +21,9 @@ userRouter.post('/login', [
 userRouter.get('/profile', authMiddleware, getUserProfile);
 
 userRouter.post('/logout', logout);
+
+userRouter.get('/allUser', authMiddleware, isAdmin, getAllUsers);
+
+userRouter.get('/allAdmin', authMiddleware, getAllAdmins);
 
 module.exports = userRouter;

@@ -45,7 +45,6 @@ function App() {
         <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
         <Route path="/user" element={<UserRoute element={<UserDashboard />} />} />
 
-        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </div >
   );

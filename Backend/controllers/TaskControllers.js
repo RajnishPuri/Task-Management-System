@@ -3,7 +3,6 @@ const Task = require('../models/TaskModel');
 const mongoose = require('mongoose');
 
 // for admin
-// Create a new task by admin to user
 exports.createTask = async (req, res) => {
     try {
         const { title, description, dueDate, priority, assignedTo } = req.body;
@@ -29,23 +28,19 @@ exports.createTask = async (req, res) => {
     }
 };
 
-// edit the task
 exports.editTask = async (req, res) => {
     try {
         const { title, description, dueDate, priority, assignedTo } = req.body;
 
-        // Validate input
         if (!title || !description || !dueDate || !priority || !assignedTo) {
             return res.status(400).json({ message: "All fields are required." });
         }
 
-        // Find the task
         const task = await Task.findById(req.params.id);
         if (!task) {
             return res.status(404).json({ message: 'Task not found' });
         }
 
-        // Update task details
         task.title = title;
         task.description = description;
         task.dueDate = dueDate;
@@ -60,8 +55,6 @@ exports.editTask = async (req, res) => {
     }
 };
 
-
-// delete the task
 exports.deleteTask = async (req, res) => {
     try {
         const task = await Task.findById(req.params.id);
@@ -76,15 +69,9 @@ exports.deleteTask = async (req, res) => {
     }
 };
 
-// admin can get all tasks that he/she has created or assigned to other users
 exports.getAllTasks = async (req, res) => {
     try {
-        const { page = 1, limit = 10 } = req.query;
-        const tasks = await Task.find({ createdBy: req.user._id, isDeleted: false })
-            .sort({ dueDate: 1 })
-            .skip((page - 1) * limit)
-            .limit(limit);
-
+        const tasks = await Task.find({ createdBy: req.user._id, isDeleted: false }).populate('assignedTo').exec();
         res.json(tasks);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -92,7 +79,6 @@ exports.getAllTasks = async (req, res) => {
 };
 
 
-// get all tasks assigned to user   
 exports.getTasks = async (req, res) => {
     try {
         const userId = req.params.userId;
@@ -104,7 +90,6 @@ exports.getTasks = async (req, res) => {
 }
 
 // for user
-// user can update the status of the task
 exports.updateTaskStatus = async (req, res) => {
     try {
         const task = await Task.findById(req.params.id);
@@ -121,7 +106,7 @@ exports.updateTaskStatus = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
-// user can see all the tasks assigned to him/her
+
 exports.getMyTasks = async (req, res) => {
     try {
         const tasks = await Task.find({ assignedTo: req.user._id, isDeleted: false }).populate('createdBy').exec();
@@ -130,4 +115,18 @@ exports.getMyTasks = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+exports.getDedicatedTask = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const task = await Task.findById(id).populate('assignedTo').exec();
+        if (!task) {
+            return res.status(404).json({ message: "Task not found" });
+        }
+        res.json(task);
+    } catch (error) {
+        console.error("Error fetching task:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
 

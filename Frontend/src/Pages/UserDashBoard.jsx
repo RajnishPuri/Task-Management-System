@@ -12,7 +12,11 @@ const UserDashBoard = () => {
     const [statusFilter, setStatusFilter] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [tasksPerPage] = useState(10);
+    const [selectedTask, setSelectedTask] = useState(null);
+    const [isSelected, setIsSelected] = useState(false);
     const navigate = useNavigate();
+    const [uniqueAdmins, setUniqueAdmins] = useState([]);
+
 
     const token = localStorage.getItem("token");
 
@@ -22,11 +26,17 @@ const UserDashBoard = () => {
         } else {
             fetchTasks();
         }
-    }, [navigate, token]);
+    }, [navigate]);
+
+    useEffect(() => {
+        const adminNames = [...new Set(tasks.map(task => task.createdBy.name))];
+        setUniqueAdmins(adminNames);
+    }, [tasks]);
+
 
     useEffect(() => {
         applyFilters();
-    }, [filter, tasks, adminNameFilter, priorityFilter, timeFilter, statusFilter, currentPage]);
+    }, [adminNameFilter, priorityFilter, timeFilter, statusFilter, currentPage, filter, tasks]);
 
     const fetchTasks = async () => {
         const response = await fetch("http://localhost:3000/api/task/getmytasks", {
@@ -37,6 +47,7 @@ const UserDashBoard = () => {
         const data = await response.json();
         setTasks(data);
     };
+
 
     const handleUpdateStatus = async (taskId, newStatus) => {
         const response = await fetch(`http://localhost:3000/api/task/updatetaskstatus/${taskId}`, {
@@ -62,9 +73,9 @@ const UserDashBoard = () => {
 
         if (timeFilter) {
             if (timeFilter === "soon") {
-                filtered = filtered.filter(task => new Date(task.dueDate) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000));
+                filtered = filtered.filter(task => new Date(task.dueDate) <= new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000));
             } else if (timeFilter === "later") {
-                filtered = filtered.filter(task => new Date(task.dueDate) > new Date(new Date().getTime() + 24 * 60 * 60 * 1000));
+                filtered = filtered.filter(task => new Date(task.dueDate) > new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000));
             }
         }
 
@@ -77,6 +88,12 @@ const UserDashBoard = () => {
         }
 
         setFilteredTasks(filtered);
+    };
+
+    const handleView = (taskId) => {
+        const task = tasks.find(task => task._id === taskId);
+        setSelectedTask(task);
+        setIsSelected(true);
     };
 
     const getPriorityColor = (priority) => {
@@ -139,55 +156,103 @@ const UserDashBoard = () => {
                             By Status
                         </button>
                     </div>
+                    <div className="space-x-2 flex">
+                        <div className="flex space-x-4">
+                            {filter === 'priority' && (
+                                <select
+                                    value={priorityFilter}
+                                    onChange={(e) => setPriorityFilter(e.target.value)}
+                                    className="p-2 bg-white text-black"
+                                >
+                                    <option value="">Select Priority</option>
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                </select>
+                            )}
+                            {filter === 'time' && (
+                                <select
+                                    value={timeFilter}
+                                    onChange={(e) => setTimeFilter(e.target.value)}
+                                    className="p-2 bg-white text-black"
+                                >
+                                    <option value="">Select Time</option>
+                                    <option value="soon">Due Soon</option>
+                                    <option value="later">Due Later</option>
+                                </select>
+                            )}
+                            {filter === "admin" && (
+                                <select
+                                    value={adminNameFilter}
+                                    onChange={(e) => setAdminNameFilter(e.target.value)}
+                                    className="p-2 bg-white text-black"
+                                >
+                                    <option value="">Select Admin</option>
+                                    {uniqueAdmins.map(admin => (
+                                        <option key={admin} value={admin}>
+                                            {admin}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                            {filter === 'status' && (
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    className="p-2 bg-white text-black"
+                                >
+                                    <option value="">Select Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="in-progress">In-progress</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            )}
+                        </div>
+                        <div>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await fetch(`http://localhost:3000/auth/logout`, {
+                                            method: 'POST', // Assuming a POST request
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                            },
+                                        });
 
-                    <div className="flex space-x-4">
-                        {filter === 'priority' && (
-                            <select
-                                value={priorityFilter}
-                                onChange={(e) => setPriorityFilter(e.target.value)}
-                                className="p-2 bg-white text-black"
+                                        localStorage.removeItem('token');
+
+                                        window.location.reload();
+                                    } catch (error) {
+                                        console.error('Logout failed:', error);
+                                    }
+                                }}
+                                className="block bg-white w-full text-left p-2 hover:bg-gray-700"
                             >
-                                <option value="">Select Priority</option>
-                                <option value="High">High</option>
-                                <option value="Medium">Medium</option>
-                                <option value="Low">Low</option>
-                            </select>
-                        )}
-                        {filter === 'time' && (
-                            <select
-                                value={timeFilter}
-                                onChange={(e) => setTimeFilter(e.target.value)}
-                                className="p-2 bg-white text-black"
-                            >
-                                <option value="">Select Time</option>
-                                <option value="soon">Due Soon</option>
-                                <option value="later">Due Later</option>
-                            </select>
-                        )}
-                        {filter === 'admin' && (
-                            <select
-                                value={adminNameFilter}
-                                onChange={(e) => setAdminNameFilter(e.target.value)}
-                                className="p-2 bg-white text-black"
-                            >
-                                <option value="">Select Admin</option>
-                                <option value="Rajnish Puri">Rajnish Puri</option>
-                            </select>
-                        )}
-                        {filter === 'status' && (
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="p-2 bg-white text-black"
-                            >
-                                <option value="">Select Status</option>
-                                <option value="pending">Pending</option>
-                                <option value="in-progress">In-progress</option>
-                                <option value="completed">Completed</option>
-                            </select>
-                        )}
+                                Logout
+                            </button>
+
+                        </div>
                     </div>
                 </div>
+
+                {isSelected && (
+                    <div className="p-4 rounded-lg shadow-md bg-white">
+                        <h2 className="text-2xl font-semibold mb-4">Task Details</h2>
+                        <p className="text-lg font-semibold">Title: {selectedTask.title}</p>
+                        <p className="text-lg font-semibold">Description: {selectedTask.description}</p>
+                        <p className="text-lg font-semibold">Due Date: {new Date(selectedTask.dueDate).toLocaleDateString()}</p>
+                        <p className="text-lg font-semibold">Status: {selectedTask.status}</p>
+                        <p className="text-lg font-semibold">Priority: {selectedTask.priority}</p>
+                        <p className="text-lg font-semibold">Created By: {selectedTask.createdBy.name}</p>
+                        <button
+                            onClick={() => setIsSelected(false)}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-md mt-4"
+                        >
+                            Close
+                        </button>
+                    </div>
+                )}
 
                 <h1 className="text-2xl font-semibold mb-4">User Dashboard</h1>
 
@@ -201,7 +266,9 @@ const UserDashBoard = () => {
                                 className={`p-4 rounded-lg shadow-md ${getPriorityColor(task.priority)} text-white`}
                             >
                                 <h3 className="text-xl font-semibold">{task.title}</h3>
-                                <p className="text-sm">{task.description}</p>
+                                <p className="text-sm">
+                                    {task.description.split(" ").slice(0, 5).join(" ")}...
+                                </p>
                                 <p className="mt-2">Due: {new Date(task.dueDate).toLocaleDateString()}</p>
                                 <p className="mt-2">Status: {task.status}</p>
                                 <p className="mt-2">Priority: {task.priority}</p>
@@ -226,12 +293,17 @@ const UserDashBoard = () => {
                                         </button>
                                     )}
                                 </div>
+                                <button
+                                    onClick={() => handleView(task._id)}
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-md mt-4"
+                                >
+                                    View
+                                </button>
                             </div>
                         ))
                     )}
                 </div>
 
-                {/* Pagination */}
                 <div className="flex justify-center mt-4">
                     <div className="space-x-2 text-white">
                         {totalPages <= 5 ? (

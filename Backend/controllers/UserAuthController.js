@@ -76,7 +76,6 @@ exports.login = async (req, res) => {
         }
 
         const token = await user.generateAuthToken();
-        console.log("hello4")
         res.cookie('token', token, {
             httpOnly: true,
         });
@@ -118,3 +117,23 @@ exports.logout = async (req, res) => {
         return res.status(401).json({ success: false, message: "User Already Logged Out!" })
     }
 }
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find({ role: { $ne: "admin" } }, "_id name email");
+        res.status(200).json(users);
+    } catch (err) {
+        res.status(500).json({ message: "Failed to fetch users", error: err.message });
+    }
+};
+
+exports.getAllAdmins = async (req, res) => {
+    try {
+        const users = await User.find({ role: "admin" }, "_id name email");
+        res.status(200).json(users);
+    } catch (err) {
+        res.status(500).json({ message: "Failed to fetch admins", error: err.message });
+    }
+};
+
+
