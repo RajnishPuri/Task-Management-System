@@ -124,7 +124,7 @@ exports.updateTaskStatus = async (req, res) => {
 // user can see all the tasks assigned to him/her
 exports.getMyTasks = async (req, res) => {
     try {
-        const tasks = await Task.find({ assignedTo: req.user._id, isDeleted: false });
+        const tasks = await Task.find({ assignedTo: req.user._id, isDeleted: false }).populate('createdBy').exec();
         res.json(tasks);
     } catch (error) {
         res.status(500).json({ message: error.message });
